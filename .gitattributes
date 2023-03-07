@@ -19,4 +19,7 @@
 /packages/jupyter-ai-dalle/LICENSE filter=lfs diff=lfs merge=lfs -text
 /LICENSE filter=lfs diff=lfs merge=lfs -text
 *.sh filter=lfs diff=lfs merge=lfs -text
+/packages/jupyter-ai-module-cookiecutter/LICENSE filter=lfs diff=lfs merge=lfs -text
+/packages/jupyter-ai-module-cookiecutter/{{cookiecutter.labextension_name}}/LICENSE filter=lfs diff=lfs merge=lfs -text
+/packages/jupyter-ai-module-cookiecutter/{{cookiecutter.labextension_name}}/binder/postBuild filter=lfs diff=lfs merge=lfs -text
 * !text !filter !merge !diff

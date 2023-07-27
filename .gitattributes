@@ -31,4 +31,6 @@
 *.ipynb filter=lfs diff=lfs merge=lfs -text
 /packages/jupyter-ai-magics/LICENSE filter=lfs diff=lfs merge=lfs -text
 *.yaml filter=lfs diff=lfs merge=lfs -text
+*.ambr filter=lfs diff=lfs merge=lfs -text
+/packages/jupyter-ai-module-cookiecutter/{{cookiecutter.root_dir_name}}/LICENSE filter=lfs diff=lfs merge=lfs -text
 * !text !filter !merge !diff

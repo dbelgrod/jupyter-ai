@@ -1,5 +1,6 @@
 from typing import Any, Dict, List, Literal, Optional, Union
 
+from jupyter_ai_magics import Persona
 from jupyter_ai_magics.providers import AuthStrategy, Field
 from langchain.pydantic_v1 import BaseModel, validator
 
@@ -34,8 +35,18 @@ class AgentChatMessage(BaseModel):
     id: str
     time: float
     body: str
-    # message ID of the HumanChatMessage it is replying to
+
     reply_to: str
+    """
+    Message ID of the HumanChatMessage being replied to. This is set to an empty
+    string if not applicable.
+    """
+
+    persona: Persona
+    """
+    The persona of the selected provider. If the selected provider is `None`,
+    this defaults to a description of `JupyternautPersona`.
+    """
 
 
 class HumanChatMessage(BaseModel):
@@ -83,6 +94,8 @@ class ListProvidersEntry(BaseModel):
     auth_strategy: AuthStrategy
     registry: bool
     fields: List[Field]
+    chat_models: Optional[List[str]]
+    completion_models: Optional[List[str]]
 
 
 class ListProvidersResponse(BaseModel):
@@ -110,6 +123,8 @@ class DescribeConfigResponse(BaseModel):
     # timestamp indicating when the configuration file was last read. should be
     # passed to the subsequent UpdateConfig request.
     last_read: int
+    completions_model_provider_id: Optional[str]
+    completions_fields: Dict[str, Dict[str, Any]]
 
 
 def forbid_none(cls, v):
@@ -126,6 +141,8 @@ class UpdateConfigRequest(BaseModel):
     # if passed, this will raise an Error if the config was written to after the
     # time specified by `last_read` to prevent write-write conflicts.
     last_read: Optional[int]
+    completions_model_provider_id: Optional[str]
+    completions_fields: Optional[Dict[str, Dict[str, Any]]]
 
     _validate_send_wse = validator("send_with_shift_enter", allow_reuse=True)(
         forbid_none
@@ -143,3 +160,14 @@ class GlobalConfig(BaseModel):
     send_with_shift_enter: bool
     fields: Dict[str, Dict[str, Any]]
     api_keys: Dict[str, str]
+    completions_model_provider_id: Optional[str]
+    completions_fields: Dict[str, Dict[str, Any]]
+
+
+class ListSlashCommandsEntry(BaseModel):
+    slash_id: str
+    description: str
+
+
+class ListSlashCommandsResponse(BaseModel):
+    slash_commands: List[ListSlashCommandsEntry] = []

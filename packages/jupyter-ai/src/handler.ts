@@ -68,12 +68,18 @@ export namespace AiService {
     id: string;
   };
 
+  export type Persona = {
+    name: string;
+    avatar_route: string;
+  };
+
   export type AgentChatMessage = {
     type: 'agent';
     id: string;
     time: number;
     body: string;
     reply_to: string;
+    persona: Persona;
   };
 
   export type HumanChatMessage = {
@@ -111,6 +117,7 @@ export namespace AiService {
     send_with_shift_enter: boolean;
     fields: Record<string, Record<string, any>>;
     last_read: number;
+    completions_model_provider_id: string | null;
   };
 
   export type UpdateConfigRequest = {
@@ -120,6 +127,8 @@ export namespace AiService {
     send_with_shift_enter?: boolean;
     fields?: Record<string, Record<string, any>>;
     last_read?: number;
+    completions_model_provider_id?: string | null;
+    completions_fields?: Record<string, Record<string, any>>;
   };
 
   export async function getConfig(): Promise<DescribeConfigResponse> {
@@ -176,6 +185,8 @@ export namespace AiService {
     help?: string;
     auth_strategy: AuthStrategy;
     registry: boolean;
+    completion_models: string[];
+    chat_models: string[];
     fields: Field[];
   };
 
@@ -204,5 +215,18 @@ export namespace AiService {
     return requestAPI<void>(`api_keys/${keyName}`, {
       method: 'DELETE'
     });
+  }
+
+  export type ListSlashCommandsEntry = {
+    slash_id: string;
+    description: string;
+  };
+
+  export type ListSlashCommandsResponse = {
+    slash_commands: ListSlashCommandsEntry[];
+  };
+
+  export async function listSlashCommands(): Promise<ListSlashCommandsResponse> {
+    return requestAPI<ListSlashCommandsResponse>('chats/slash_commands');
   }
 }

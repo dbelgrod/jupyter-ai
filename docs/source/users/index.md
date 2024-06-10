@@ -24,6 +24,11 @@ JupyterLab, depends on JupyterLab 4. If upgrading to JupyterLab 4 is not
 possible in your environment, you should install `jupyter_ai` v1.x instead.
 See "Installation" for more details.
 
+:::{attention}
+:name: jupyter-lab-3-end-of-maintenance
+JupyterLab 3 will reach its end of maintenance date on May 15, 2024, anywhere on Earth. As a result, we will not backport new features to the v1 branch supporting JupyterLab 3 after this date. Fixes for critical issues will still be backported until December 31, 2024. If you are still using JupyterLab 3, we strongly encourage you to **upgrade to JupyterLab 4 as soon as possible**. For more information, see [JupyterLab 3 end of maintenance](https://blog.jupyter.org/jupyterlab-3-end-of-maintenance-879778927db2) on the Jupyter Blog.
+:::
+
 You can install JupyterLab using `pip` or `conda`.
 
 1. via `pip`:
@@ -134,8 +139,8 @@ Jupyter AI supports the following model providers:
 | Provider            | Provider ID          | Environment variable(s)    | Python package(s)               |
 |---------------------|----------------------|----------------------------|---------------------------------|
 | AI21                | `ai21`               | `AI21_API_KEY`             | `ai21`                          |
-| Anthropic           | `anthropic`          | `ANTHROPIC_API_KEY`        | `anthropic`                     |
-| Anthropic (chat)    | `anthropic-chat`     | `ANTHROPIC_API_KEY`        | `anthropic`                     |
+| Anthropic           | `anthropic`          | `ANTHROPIC_API_KEY`        | `langchain-anthropic`           |
+| Anthropic (chat)    | `anthropic-chat`     | `ANTHROPIC_API_KEY`        | `langchain-anthropic`           |
 | Bedrock             | `bedrock`            | N/A                        | `boto3`                         |
 | Bedrock (chat)      | `bedrock-chat`       | N/A                        | `boto3`                         |
 | Cohere              | `cohere`             | `COHERE_API_KEY`           | `cohere`                        |
@@ -144,8 +149,8 @@ Jupyter AI supports the following model providers:
 | GPT4All             | `gpt4all`            | N/A                        | `gpt4all`                       |
 | Hugging Face Hub    | `huggingface_hub`    | `HUGGINGFACEHUB_API_TOKEN` | `huggingface_hub`, `ipywidgets`, `pillow` |
 | NVIDIA              | `nvidia-chat`        | `NVIDIA_API_KEY`           | `langchain_nvidia_ai_endpoints` |
-| OpenAI              | `openai`             | `OPENAI_API_KEY`           | `openai`                        |
-| OpenAI (chat)       | `openai-chat`        | `OPENAI_API_KEY`           | `openai`                        |
+| OpenAI              | `openai`             | `OPENAI_API_KEY`           | `langchain-openai`              |
+| OpenAI (chat)       | `openai-chat`        | `OPENAI_API_KEY`           | `langchain-openai`              |
 | SageMaker           | `sagemaker-endpoint` | N/A                        | `boto3`                         |
 
 The environment variable names shown above are also the names of the settings keys used when setting up the chat interface.
@@ -458,6 +463,38 @@ use the `-a` or `--all-files` option.
 # learn from all supported files
 /learn -a <directory>
 ```
+
+#### Supported files for the learn command
+
+Jupyter AI can only learn from files with the following file extensions:
+
+* .py
+* .md
+* .R
+* .Rmd
+* .jl
+* .sh
+* .ipynb
+* .js
+* .ts
+* .jsx
+* .tsx
+* .txt
+* .html
+* .pdf
+* .tex
+
+### Learning arXiv files
+
+The `/learn` command also provides downloading and processing papers from the [arXiv](https://arxiv.org/) repository. You will need to install the `arxiv` python package for this feature to work. Run `pip install arxiv` to install the `arxiv` package.
+
+```
+/learn -r arxiv 2404.18558
+```
+
+### Exporting chat history
+Use the `/export` command to export the chat history from the current session to a markdown file named `chat_history-YYYY-MM-DD-HH-mm.md`. Using `/export <file_name>` will export the chat history to `<file_name>-YYYY-MM-DD-HH-mm.md` instead. You can export chat history as many times as you like in a single session. Each successive export will include the entire chat history up to that point in the session.
+
 
 ### Additional chat commands
 

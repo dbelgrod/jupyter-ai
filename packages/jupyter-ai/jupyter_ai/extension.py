@@ -1,12 +1,15 @@
-import logging
+import os
 import re
 import time
+import types
 
 from dask.distributed import Client as DaskClient
 from importlib_metadata import entry_points
 from jupyter_ai.chat_handlers.learn import Retriever
+from jupyter_ai_magics import BaseProvider, JupyternautPersona
 from jupyter_ai_magics.utils import get_em_providers, get_lm_providers
 from jupyter_server.extension.application import ExtensionApp
+from tornado.web import StaticFileHandler
 from traitlets import Dict, List, Unicode
 
 from .chat_handlers import (
@@ -18,7 +21,7 @@ from .chat_handlers import (
     HelpChatHandler,
     LearnChatHandler,
 )
-from .chat_handlers.help import HelpMessage
+from .chat_handlers.help import build_help_message
 from .completions.handlers import DefaultInlineCompletionHandler
 from .config_manager import ConfigManager
 from .handlers import (
@@ -28,6 +31,12 @@ from .handlers import (
     GlobalConfigHandler,
     ModelProviderHandler,
     RootChatHandler,
+    SlashCommandsInfoHandler,
+)
+
+JUPYTERNAUT_AVATAR_ROUTE = JupyternautPersona.avatar_route
+JUPYTERNAUT_AVATAR_PATH = str(
+    os.path.join(os.path.dirname(__file__), "static", "jupyternaut.svg")
 )
 
 
@@ -38,9 +47,18 @@ class AiExtension(ExtensionApp):
         (r"api/ai/config/?", GlobalConfigHandler),
         (r"api/ai/chats/?", RootChatHandler),
         (r"api/ai/chats/history?", ChatHistoryHandler),
+        (r"api/ai/chats/slash_commands?", SlashCommandsInfoHandler),
         (r"api/ai/providers?", ModelProviderHandler),
         (r"api/ai/providers/embeddings?", EmbeddingsModelProviderHandler),
         (r"api/ai/completion/inline/?", DefaultInlineCompletionHandler),
+        # serve the default persona avatar at this path.
+        # the `()` at the end of the URL denotes an empty regex capture group,
+        # required by Tornado.
+        (
+            rf"{JUPYTERNAUT_AVATAR_ROUTE}()",
+            StaticFileHandler,
+            {"path": JUPYTERNAUT_AVATAR_PATH},
+        ),
     ]
 
     allowed_providers = List(
@@ -185,6 +203,11 @@ class AiExtension(ExtensionApp):
             defaults=defaults,
         )
 
+        # Expose a subset of settings as read-only to the providers
+        BaseProvider.server_settings = types.MappingProxyType(
+            self.serverapp.web_app.settings
+        )
+
         self.log.info("Registered providers.")
 
         self.log.info(f"Registered {self.name} server extension")
@@ -303,13 +326,35 @@ class AiExtension(ExtensionApp):
         # Make help always appear as the last command
         jai_chat_handlers["/help"] = help_chat_handler
 
-        self.settings["chat_history"].append(
-            HelpMessage(chat_handlers=jai_chat_handlers)
-        )
+        # bind chat handlers to settings
         self.settings["jai_chat_handlers"] = jai_chat_handlers
+
+        # show help message at server start
+        self._show_help_message()
 
         latency_ms = round((time.time() - start) * 1000)
         self.log.info(f"Initialized Jupyter AI server extension in {latency_ms} ms.")
+
+    def _show_help_message(self):
+        """
+        Method that ensures a dynamically-generated help message is included in
+        the chat history shown to users.
+        """
+        chat_handlers = self.settings["jai_chat_handlers"]
+        config_manager: ConfigManager = self.settings["jai_config_manager"]
+        lm_provider = config_manager.lm_provider
+
+        if not lm_provider:
+            return
+
+        persona = config_manager.persona
+        unsupported_slash_commands = (
+            lm_provider.unsupported_slash_commands if lm_provider else set()
+        )
+        help_message = build_help_message(
+            chat_handlers, persona, unsupported_slash_commands
+        )
+        self.settings["chat_history"].append(help_message)
 
     async def _get_dask_client(self):
         return DaskClient(processes=False, asynchronous=True)

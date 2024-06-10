@@ -5,6 +5,7 @@ import SettingsIcon from '@mui/icons-material/Settings';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import type { Awareness } from 'y-protocols/awareness';
 import type { IThemeManager } from '@jupyterlab/apputils';
+import { IRenderMimeRegistry } from '@jupyterlab/rendermime';
 
 import { JlThemeProvider } from './jl-theme-provider';
 import { ChatMessages } from './chat-messages';
@@ -18,7 +19,11 @@ import {
 import { SelectionWatcher } from '../selection-watcher';
 import { ChatHandler } from '../chat_handler';
 import { CollaboratorsContextProvider } from '../contexts/collaborators-context';
-import { IRenderMimeRegistry } from '@jupyterlab/rendermime';
+import { IJaiCompletionProvider } from '../tokens';
+import {
+  ActiveCellContextProvider,
+  ActiveCellManager
+} from '../contexts/active-cell-context';
 import { ScrollContainer } from './scroll-container';
 
 type ChatBodyProps = {
@@ -185,6 +190,9 @@ export type ChatProps = {
   themeManager: IThemeManager | null;
   rmRegistry: IRenderMimeRegistry;
   chatView?: ChatView;
+  completionProvider: IJaiCompletionProvider | null;
+  openInlineCompleterSettings: () => void;
+  activeCellManager: ActiveCellManager;
 };
 
 enum ChatView {
@@ -199,47 +207,57 @@ export function Chat(props: ChatProps): JSX.Element {
     <JlThemeProvider themeManager={props.themeManager}>
       <SelectionContextProvider selectionWatcher={props.selectionWatcher}>
         <CollaboratorsContextProvider globalAwareness={props.globalAwareness}>
-          <Box
-            // root box should not include padding as it offsets the vertical
-            // scrollbar to the left
-            sx={{
-              width: '100%',
-              height: '100%',
-              boxSizing: 'border-box',
-              background: 'var(--jp-layout-color0)',
-              display: 'flex',
-              flexDirection: 'column'
-            }}
+          <ActiveCellContextProvider
+            activeCellManager={props.activeCellManager}
           >
-            {/* top bar */}
-            <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-              {view !== ChatView.Chat ? (
-                <IconButton onClick={() => setView(ChatView.Chat)}>
-                  <ArrowBackIcon />
-                </IconButton>
-              ) : (
-                <Box />
+            <Box
+              // root box should not include padding as it offsets the vertical
+              // scrollbar to the left
+              sx={{
+                width: '100%',
+                height: '100%',
+                boxSizing: 'border-box',
+                background: 'var(--jp-layout-color0)',
+                display: 'flex',
+                flexDirection: 'column'
+              }}
+            >
+              {/* top bar */}
+              <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                {view !== ChatView.Chat ? (
+                  <IconButton onClick={() => setView(ChatView.Chat)}>
+                    <ArrowBackIcon />
+                  </IconButton>
+                ) : (
+                  <Box />
+                )}
+                {view === ChatView.Chat ? (
+                  <IconButton onClick={() => setView(ChatView.Settings)}>
+                    <SettingsIcon />
+                  </IconButton>
+                ) : (
+                  <Box />
+                )}
+              </Box>
+              {/* body */}
+              {view === ChatView.Chat && (
+                <ChatBody
+                  chatHandler={props.chatHandler}
+                  setChatView={setView}
+                  rmRegistry={props.rmRegistry}
+                />
               )}
-              {view === ChatView.Chat ? (
-                <IconButton onClick={() => setView(ChatView.Settings)}>
-                  <SettingsIcon />
-                </IconButton>
-              ) : (
-                <Box />
+              {view === ChatView.Settings && (
+                <ChatSettings
+                  rmRegistry={props.rmRegistry}
+                  completionProvider={props.completionProvider}
+                  openInlineCompleterSettings={
+                    props.openInlineCompleterSettings
+                  }
+                />
               )}
             </Box>
-            {/* body */}
-            {view === ChatView.Chat && (
-              <ChatBody
-                chatHandler={props.chatHandler}
-                setChatView={setView}
-                rmRegistry={props.rmRegistry}
-              />
-            )}
-            {view === ChatView.Settings && (
-              <ChatSettings rmRegistry={props.rmRegistry} />
-            )}
-          </Box>
+          </ActiveCellContextProvider>
         </CollaboratorsContextProvider>
       </SelectionContextProvider>
     </JlThemeProvider>

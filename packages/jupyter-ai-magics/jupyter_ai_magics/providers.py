@@ -557,6 +557,17 @@ class GPT4AllProvider(BaseProvider, GPT4All):
             kwargs["backend"] = "gptj"
 
         kwargs["allow_download"] = False
+        kwargs["device"] = "gpu"
+        
+        # kwargs["repeat_penalty"] = 1.8
+        kwargs["top_p"] = 0.9
+        kwargs["f16_kv"] = True
+
+        
+        kwargs["temperature"] = float(kwargs.get("temperature", 0.0))
+        kwargs["n_predict"] = int(kwargs.get("n_predict", 256))
+        
+        
         n_threads = kwargs.get("n_threads", None)
         if n_threads is not None:
             kwargs["n_threads"] = max(int(n_threads), 1)
@@ -569,18 +580,37 @@ class GPT4AllProvider(BaseProvider, GPT4All):
         "ggml-gpt4all-j-v1.2-jazzy",
         "ggml-gpt4all-j-v1.3-groovy",
         # this one needs llama backend and has licence restriction
-        "ggml-gpt4all-l13b-snoozy",
-        "mistral-7b-openorca.Q4_0",
-        "mistral-7b-instruct-v0.1.Q4_0",
-        "gpt4all-falcon-q4_0",
-        "wizardlm-13b-v1.2.Q4_0",
-        "nous-hermes-llama2-13b.Q4_0",
-        "gpt4all-13b-snoozy-q4_0",
-        "mpt-7b-chat-merges-q4_0",
-        "orca-mini-3b-gguf2-q4_0",
-        "starcoder-q4_0",
-        "rift-coder-v0-7b-q4_0",
-        "em_german_mistral_v01.Q4_0",
+        # "ggml-gpt4all-l13b-snoozy",
+        # "mistral-7b-openorca.Q4_0",
+        # "nous-hermes-llama2-13b.Q4_0",
+        "codellama",
+        "llama2",
+        "llama2:13b",
+        # "Nous-Hermes-2-Mistral-7B-DPO.Q4_0",
+        "Hermes-2-Pro-Mistral-7B.Q8_0",
+        # "codellama-13b.Q6_K",
+        # "deepseek-coder-1.3b-instruct.Q5_K_M",
+        # "mixtral-8x7b-instruct-v0.1.Q3_K_M",
+        # "Nous-Hermes-2-Mistral-7B-DPO.Q8_0",
+        # "mistral-7b-openorca.gguf2.Q4_0",
+        # "mistral-7b-instruct-v0.1.Q4_0",
+        "llama-2-7b-chat.Q4_0",
+        "llama-2-7b-chat.Q5_K_M",
+        # "Meta-Llama-3-8B-Instruct-Q5_K_M"
+        "Meta-Llama-3-8B-Q4_5_M",
+        "llama-2-13b-chat.Q6_K"
+        # "rift-coder-v0-7b-q4_0",
+        # "mixtral-8x7b-v0.1.Q2_K",
+        # "gpt4all-falcon-newbpe-q4_0"
+        # "gpt4all-falcon-q4_0",
+        # "wizardlm-13b-v1.2.Q4_0",
+        # "nous-hermes-llama2-13b.Q4_0",
+        # "gpt4all-13b-snoozy-q4_0",
+        # "mpt-7b-chat-merges-q4_0",
+        # "orca-mini-3b-gguf2-q4_0",
+        # "starcoder-q4_0",
+        # "rift-coder-v0-7b-q4_0",
+        # "em_german_mistral_v01.Q4_0",
     ]
     model_id_key = "model"
     pypi_package_deps = ["gpt4all"]
@@ -746,7 +776,7 @@ class JsonContentHandler(LLMContentHandler):
 class SmEndpointProvider(BaseProvider, SagemakerEndpoint):
     id = "sagemaker-endpoint"
     name = "SageMaker endpoint"
-    models = ["*"]
+    models = ["Meta-Llama-3-8B-Instruct"]
     model_id_key = "endpoint_name"
     model_id_label = "Endpoint name"
     # This all needs to be on one line of markdown, for use in a table
@@ -760,24 +790,31 @@ class SmEndpointProvider(BaseProvider, SagemakerEndpoint):
     pypi_package_deps = ["boto3"]
     auth_strategy = AwsAuthStrategy()
     registry = True
-    fields = [
-        TextField(key="region_name", label="Region name (required)", format="text"),
-        MultilineTextField(
-            key="request_schema", label="Request schema (required)", format="json"
-        ),
-        TextField(
-            key="response_path", label="Response path (required)", format="jsonpath"
-        ),
-    ]
+    # fields = [
+    #     TextField(key="region_name", label="Region name (required)", format="text"),
+    #     MultilineTextField(
+    #         key="request_schema", label="Request schema (required)", format="json"
+    #     ),
+    #     TextField(
+    #         key="response_path", label="Response path (required)", format="jsonpath"
+    #     ),
+    # ]
 
     def __init__(self, *args, **kwargs):
-        request_schema = kwargs.pop("request_schema")
-        response_path = kwargs.pop("response_path")
+        # request_schema = kwargs.pop("request_schema")
+        # response_path = kwargs.pop("response_path")
+        region_name = "us-east-1"
+        endpoint_name = "meta-llama-3-8b-instruct"
         content_handler = JsonContentHandler(
-            request_schema=request_schema, response_path=response_path
+            # request_schema=request_schema, response_path=response_path
+            request_schema='{"inputs":"<prompt>", "parameters": {"temperature": 0.000,  "max_new_tokens": 512,  "stop": "<|eot_id|>"}}', 
+            response_path='generated_text'
         )
 
-        super().__init__(*args, **kwargs, content_handler=content_handler)
+        super().__init__(*args, **kwargs, 
+                        #  endpoint_name=endpoint_name,
+                         region_name=region_name,
+                         content_handler=content_handler)
 
     async def _acall(self, *args, **kwargs) -> Coroutine[Any, Any, str]:
         return await self._call_in_executor(*args, **kwargs)
